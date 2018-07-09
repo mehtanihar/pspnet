@@ -9,6 +9,7 @@ Results:
 
 FCN8: 
 Training: Pixel accuracy: 93%, Mean IU: 62%
+
 Validation: Pixel accuracy: 83%, Mean IU: 43%
 
 PSPNet: Training accuracy: 96%, Validation accuracy: 62%
