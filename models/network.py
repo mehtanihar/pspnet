@@ -1,21 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+from torchvision import models
+import torchvision
 import torch.nn.functional as F
 import numpy as np
+from IPython.core.debugger import set_trace
+
 from torch.utils import model_zoo
-import vgg
 import deeplab_resnet
 from torch.autograd import Variable
-from transforms import ToTensor, ToPILImage
-from transform import Relabel, ToLabel, Colorize
 import scipy.misc
 from PIL import Image
 
 
-image_transform = ToPILImage()
-dir="epoch_analysis/"
-color_transform=Colorize()
 
 def kmoment(x,k):
     return np.sum((x)**k) / np.size(x)
@@ -26,7 +24,7 @@ class FCN8(nn.Module):
 	def __init__(self, num_classes):
 		super().__init__()
 
-		feats = list(vgg.vgg16(pretrained=True).features.children())
+		feats = list(models.vgg16(pretrained=True).features.children())
 
 		self.feats = nn.Sequential(*feats[0:10])
 		self.feat3 = nn.Sequential(*feats[10:17])
@@ -46,32 +44,32 @@ class FCN8(nn.Module):
 		self.score_fconn = nn.Conv2d(4096, num_classes, 1)
 
 	def forward(self, x):
-		
-		#Size of input=1,num_classes,256,256	
+
+		#Size of input=1,num_classes,256,256
 		feats = self.feats(x) #1,128,64,64
 		feat3 = self.feat3(feats)#1,256,32,32
 		feat4 = self.feat4(feat3)#1,512,16,16
 		feat5 = self.feat5(feat4)#1,512,8,8
 		fconn = self.fconn(feat5)#1,4096,8,8
-		
+
 		score_feat3 = self.score_feat3(feat3)#1,num_classes,32,32
 		score_feat4 = self.score_feat4(feat4)#1,num_classes,16,16
 		score_fconn = self.score_fconn(fconn)#1,num_classes,8,8
-		
+
 		score = F.upsample_bilinear(score_fconn, score_feat4.size()[2:])
 		score += score_feat4
 		score = F.upsample_bilinear(score, score_feat3.size()[2:])
 		score += score_feat3
-				
+
 		output = F.upsample_bilinear(score, x.size()[2:])#1,num_classes,256,256
-				
+
 		return output
-		
-		
+
+
 class PyramidPool(nn.Module):
 
 	def __init__(self, in_features, out_features, pool_size):
-		super(PSPDec,self).__init__()
+		super(PyramidPool,self).__init__()
 
 		self.features = nn.Sequential(
 			nn.AdaptiveAvgPool2d(pool_size),
@@ -89,58 +87,59 @@ class PyramidPool(nn.Module):
 
 class PSPNet(nn.Module):
 
-	def __init__(self, num_classes):
-		super(PSPNet,self).__init__()
-		print("initializing model")
-		init_net=deeplab_resnet.Res_Deeplab()
-
-		state=torch.load("models/MS_DeepLab_resnet_trained_VOC.pth")
-		init_net.load_state_dict(state)
-		self.resnet=init_net
-			
-
-		self.layer5a = PyramidPool(2048, 512, 1)
-		self.layer5b = PyramidPool(2048, 512, 2)
-		self.layer5c = PyramidPool(2048, 512, 3)
-		self.layer5d = PyramidPool(2048, 512, 6)
-
-				
+    def __init__(self, num_classes, pretrained = False):
+        super(PSPNet,self).__init__()
+        print("initializing model")
+        #init_net=deeplab_resnet.Res_Deeplab()
+        #state=torch.load("models/MS_DeepLab_resnet_trained_VOC.pth")
+        #init_net.load_state_dict(state)
+        self.resnet = torchvision.models.resnet50(pretrained = pretrained)
 
 
-		self.final = nn.Sequential(
-			nn.Conv2d(4096, 512, 3, padding=1, bias=False),
-			nn.BatchNorm2d(512, momentum=.95),
-			nn.ReLU(inplace=True),
-			nn.Dropout(.1),
-			nn.Conv2d(512, num_classes, 1),
-		)
-		
-		initialize_weights(self.layer5a,self.layer5b,self.layer5c,self.layer5d,self.final)
-						
-				
-				
+        self.layer5a = PyramidPool(2048, 512, 1)
+        self.layer5b = PyramidPool(2048, 512, 2)
+        self.layer5c = PyramidPool(2048, 512, 3)
+        self.layer5d = PyramidPool(2048, 512, 6)
 
-	def forward(self, x):
-		count=0
 
-		size=x.size()
-		x=self.resnet(x)
-		
-		x=x[0]
-		
-				
-		x = self.final(torch.cat([
-			x,
-			self.layer5a(x),
-			self.layer5b(x),
-			self.layer5c(x),
-			self.layer5d(x),
-		], 1))
-		
 
-		
 
-		return F.upsample_bilinear(x,size[2:])
+        self.final = nn.Sequential(
+        	nn.Conv2d(4096, 512, 3, padding=1, bias=False),
+        	nn.BatchNorm2d(512, momentum=.95),
+        	nn.ReLU(inplace=True),
+        	nn.Dropout(.1),
+        	nn.Conv2d(512, num_classes, 1),
+        )
+
+        initialize_weights(self.layer5a,self.layer5b,self.layer5c,self.layer5d,self.final)
+
+
+
+
+    def forward(self, x):
+        count=0
+
+        size=x.size()
+        x = self.resnet.conv1(x)
+        x = self.resnet.bn1(x)
+        x = self.resnet.relu(x)
+        # x = self.resnet.maxpool(x)
+        x = self.resnet.layer1(x)
+        x = self.resnet.layer2(x)
+        x = self.resnet.layer3(x)
+        x = self.resnet.layer4(x)
+
+        x = self.final(torch.cat([
+        	x,
+        	self.layer5a(x),
+        	self.layer5b(x),
+        	self.layer5c(x),
+        	self.layer5d(x),
+        ], 1))
+
+
+        return F.upsample_bilinear(x,size[2:])
 
 
 
@@ -160,8 +159,8 @@ class SegNet(nn.Module):
 		self.pool4=nn.Sequential(*encoders[33:34])
 		self.enc5 = nn.Sequential(*encoders[34:43])
 		self.pool5=nn.Sequential(*encoders[43:44])
-		
-		
+
+
 		self.pool=nn.MaxPool2d(2, stride=2,dilation=1,return_indices=True);
 		self.unpool=nn.MaxUnpool2d(2, stride=2);
 		self.dec5=nn.Sequential(
@@ -175,7 +174,7 @@ class SegNet(nn.Module):
 			nn.BatchNorm2d(512,momentum=0.1),
 			nn.ReLU(inplace=True),
 		)
-		
+
 		self.dec4=nn.Sequential(
 			nn.Conv2d(512, 512, 3, padding=1,dilation=1),
 			nn.BatchNorm2d(512,momentum=0.1),
@@ -190,7 +189,7 @@ class SegNet(nn.Module):
 			nn.BatchNorm2d(256,momentum=0.1),
 			nn.ReLU(inplace=True),
 		)
-		
+
 		self.dec3=nn.Sequential(
 			nn.Conv2d(256, 256, 3, padding=1,dilation=1),
 			nn.BatchNorm2d(256,momentum=0.1),
@@ -202,7 +201,7 @@ class SegNet(nn.Module):
 			nn.BatchNorm2d(128,momentum=0.1),
 			nn.ReLU(inplace=True),
 		)
-		
+
 		self.dec2=nn.Sequential(
 			nn.Conv2d(128, 128, 3, padding=1,dilation=1),
 			nn.BatchNorm2d(128,momentum=0.1),
@@ -211,7 +210,7 @@ class SegNet(nn.Module):
 			nn.BatchNorm2d(64,momentum=0.1),
 			nn.ReLU(inplace=True),
 		)
-		
+
 		self.dec1=nn.Sequential(
 			nn.Conv2d(64, 64, 3, padding=1,dilation=1),
 			nn.BatchNorm2d(64,momentum=0.1),
@@ -220,11 +219,11 @@ class SegNet(nn.Module):
 			nn.BatchNorm2d(self.num_classes,momentum=0.1),
 			nn.ReLU(inplace=True),
 		)
-		
-		
+
+
 
 	def forward(self, x):
-	
+
 		enc1=self.enc1(x)
 		pool1,pool1_indices=self.pool(enc1)
 		enc2=self.enc2(pool1)
@@ -235,7 +234,7 @@ class SegNet(nn.Module):
 		pool4,pool4_indices=self.pool(enc4)
 		enc5=self.enc5(pool4)
 		pool5,pool5_indices=self.pool(enc5)
-		
+
 		unpool5=self.unpool(pool5,pool5_indices)
 		dec5=self.dec5(unpool5)
 		unpool4=self.unpool(pool4,pool4_indices)
@@ -248,7 +247,7 @@ class SegNet(nn.Module):
 		dec1=self.dec1(unpool1)
 
 		return dec1
-		
+
 
 def initialize_weights(*models):
 	for model in models:

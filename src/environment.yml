@@ -1,0 +1,20 @@
+name: psp_env
+
+channels:
+  - pytorch
+  - menpo
+
+dependencies:
+  - python=3.6
+  - pytorch
+  - torchvision
+  - scikit-learn
+  - matplotlib
+  - ignite
+  - cyvlfeat
+  - ipython
+  - pip
+  - pip:
+      - transforms3d
+      - visdom
+      - open3d-python
