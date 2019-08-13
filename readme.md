@@ -7,30 +7,59 @@ FCN8 and PSPNet were trained on the PASCAL VOC 2012 Dataset and the BRATS 2017 D
 
 Results:
 
-FCN8: 
+FCN8:
+
 Validation: Pixel accuracy: 83%, Mean IU: 43%
 
+![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/loss.png)
+
+![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/acc.png)
+
+![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/mean_IU.png)
+
 PSPNet: 
+
 Validation: Pixel accuracy: 82%, Mean IU: 62%
+
+![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/loss.png)
+
+![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/acc.png)
+
+![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/mean_IU.png)
 
 Setup:
 Install the environment using:
+```
 conda env create -f environment.yml
+```
+
 Activate the environment:
+```
 source activate psp_env
-Start visdom on port 8097
+```
+
+Start visdom on port 8097:
+```
+visdom
+```
 
 Training:
+```
 python main.py [-h] --dataset DATASET --model MODEL [--train] [--test]
                     [--checkpoint CHECKPOINT] --config CONFIG
                     [--exp_suffix EXP_SUFFIX] [--device {cpu,cuda:0,cuda:1}]
                     [--image IMAGE] [--label LABEL]
+```
 
 Example: 
+```
 python main.py --dataset VOC12 --model PSPNet --train --config ../configs/config.ini --exp_suffix 1 --device cpu
+```
 
 Validation:
+```
 python main.py --dataset VOC12 --model PSPNet --test --checkpoint <checkpoint_file>  --config ../configs/config.ini --exp_suffix 1 --image input_image --label output_image
+```
 
 References:
 
