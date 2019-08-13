@@ -11,21 +11,25 @@ FCN8:
 
 Validation: Pixel accuracy: 83%, Mean IU: 43%
 
-![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/loss.png)
-
-![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/acc.png)
-
-![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/mean_IU.png)
+<table>
+<tr>
+<td><img src="https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/loss.png" width="300"></td>
+<td><img src="https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/acc.png" width="300"></td>
+<td><img src="https://github.com/mehtanihar/pspnet/blob/master/results/FCN%20VOC%20train/mean_IU.png" width="300"></td>
+</tr>
+</table>
 
 PSPNet: 
 
 Validation: Pixel accuracy: 82%, Mean IU: 62%
 
-![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/loss.png)
-
-![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/acc.png)
-
-![alt text](https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/mean_IU.png)
+<table>
+<tr>
+<td><img src="https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/loss.png" width="300"></td>
+<td><img src="https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/acc.png" width="300"></td>
+<td><img src="https://github.com/mehtanihar/pspnet/blob/master/results/PSPNet%20VOC/mean_IU.png" width="300"></td>
+</tr>
+</table>
 
 Setup:
 Install the environment using:
